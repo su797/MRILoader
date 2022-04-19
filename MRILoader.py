@@ -58,7 +58,18 @@ class MRILoader:
         self.normalizeSlicesTernary = self.normalizeSlicesTernary.astype(
             np.uint8)  # 转换为无符号int 8（0~255），必须要注意，这里如果不转换opencv等无法识别
         print("Complete Ternization!")
-
+        '''
+            深度学习预处理时（需要先归一化）
+            使用pytorch的话可以用
+            tf=Transform.Compose([
+            lambda x:Image.open(x).convert('RGB'),
+            transform.toTensor()]
+            或
+            tf=Transform.Compose([
+            transforms.Grayscale(num_output_channels=3),
+            transforms.toTensor()]
+            进行转换
+        '''
     # 显示指定的图片，num为切片序号
     def display(self, num=0):
         # 如果没有进行正则三通道化，就先进行
