@@ -167,12 +167,20 @@ class MultipleMRILoader:
         # 获取路径下所有nii文件
         self.pathArr = glob.glob(path)  # 获取文件路径
         self.normalizeSlicesTernary = None  # 三通道化对象
+        self.normalizeSlices= None  # 归一化对象
         self.loaders = []  # 加载器对象
         for i in range(len(self.pathArr)):  # 为每张图片创建对象
             self.loaders.append(MRILoader(self.pathArr[i]))  # 以此进行初始化，并存储加载器数组
 
     # 避免在三通道化后重复归一化，在这里不提供归一化后的数组的返回（毕竟一般也用不到）
-
+    # 批量获取归一化数组
+    def getNormalizeSlices(self):
+        if self.normalizeSlices is None:  # 如果为None就依次进行初始化创建
+            self.normalizeSlices = []
+            # 初始化加载器
+            for i in range(len(self.loaders)):
+                self.normalizeSlices.append(self.loaders[i].getNormalizeSlices())
+        return self.normalizeSlices  # 返回三通道化图数组
     # 批量获取三通道化数组
     def getNormalizeSlicesTernary(self):
         if self.normalizeSlicesTernary is None:  # 如果为None就依次进行初始化创建
@@ -204,5 +212,5 @@ class MultipleMRILoader:
         # 遍历所有加载器保存图片
         for i in range(len(self.loaders)):
             self.loaders[i].save(os.path.join(savePath, folderName + str(i)), r, fileName, suffix,
-                                 black)  # 以此进行初始化，并存储加载器数组
+                                 black)
 
