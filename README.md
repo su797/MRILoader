@@ -1,5 +1,5 @@
 # MRILoader
-<p>version 1.2 2022/4/19</p>
+<p>version 1.3 2022/4/24</p>
 <h2>介绍</h2>
 <p>
   本项目主要解决了nii、nii.gz格式的MRI图像单通道，且没有被归一化的问题，并进一步封装，让数据更规整更容易解析。同时提供了一些辅助函数。
@@ -46,7 +46,7 @@ from MRILoader import MRILoader,MultipleMRILoader
 
 <h4>.getNormalizeSlices(black=True)</h4>
    <p>
-  black       是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
+  black       是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False。<br/>
   获取归一化后的MRI切片图，如果没有归一化会自动进行归一化
 </p>
 <code>
@@ -55,7 +55,7 @@ from MRILoader import MRILoader,MultipleMRILoader
   
 <h4>.getNormalizeSlicesTernary(black=True)</h4>
    <p>
-  black       是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
+  black       是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False。<br/>
   获取三通道化后的MRI切片图，如果没有三通道化会自动进行三通道化（同样如果没有归一化，会先进行归一化再进行三通道化）。(切片序号,w，h)
 
 </p>
@@ -96,7 +96,7 @@ black        是否包含纯黑的切片，如果包含的话就是True（默认
   </code>
   <h4>.getNormalizeSlices(black=True)</h4>
    <p>
-  black       是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
+  black       是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False<br/>
   获取归一后的MRI切片图，如果没有归一化会自动进行归一化，拿到的切片数据列表维度是以(文件序号,切片序号,w，h)的方式排列的。
 </p>
 <code>
@@ -105,7 +105,7 @@ black        是否包含纯黑的切片，如果包含的话就是True（默认
   
 <h4>.getNormalizeSlicesTernary(black=True)</h4>
    <p>
-  black       是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
+  black       是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False。<br/>
   获取三通道化后的MRI切片图，如果没有三通道化会自动进行三通道化（同样如果没有归一化，会先进行归一化再进行三通道化）
 拿到的切片数据列表维度是以(文件序号,切片序号,w，h)的方式排列的
 </p>
