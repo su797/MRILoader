@@ -20,7 +20,8 @@ class MRILoader:
     # 因为我们拿到的nii图片是单通道，且像素值不定，超过255，因此对每张图片都需要进行归一化处理
     def normalize(self):
         print("Start normalization...")
-        self.normalizeSlices = np.zeros(self.slices.shape)  # 初始化，创建一个同样大小的数组存储归一化后的值
+        self.normalizeSlices = np.zeros(self.slices.shape)  # 初始化，创建一
+        # 个同样大小的数组存储归一化后的值
         # 获取第一个维度，进行遍历
         for s in range(self.slices.shape[0]):
             # 获取当前切片
@@ -143,18 +144,38 @@ class MRILoader:
     # 这里的getter用于节约步骤和流程，公共成员不使用getter也可以调用
     # 建议使用getter来访问这些数组，确保这些数组已经被初始化，或自行调用方法进行处理
     # 获取归一化后的数组
-    def getNormalizeSlices(self):
+    # black        是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
+    def getNormalizeSlices(self,black=True):
+        self.noBlackNormalizeSlices=[]
         # 如果没被归一化，则需要先归一化
         if self.normalizeSlices is None:
             self.normalize()
+        #如果不要黑色帧
+        if black == False:
+            if len(self.noBlackNormalizeSlices)<=0:
+                for i in range(len(self.normalizeSlices)):
+                    if i not in self.blackMap:
+                        self.noBlackNormalizeSlices.append(self.normalizeSlices[i])
+            return self.noBlackNormalizeSlices
+
         # 返回归一化后的数组
         return self.normalizeSlices
 
     # 获取三通道化后的数组
-    def getNormalizeSlicesTernary(self):
+    # black        是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
+    def getNormalizeSlicesTernary(self,black=True):
+        self.noBlackNormalizeSlicesTernary=[]
+
         # 如果没被三通道化，就进行三通道化
         if self.normalizeSlicesTernary is None:
             self.normalizeSlicesToTernary()
+        # 如果不要黑色帧
+        if black == False:
+            if len(self.noBlackNormalizeSlicesTernary) <= 0:#当前没有三通道去黑色切片的数组
+                for i in range(len(self.normalizeSlicesTernary)):#遍历三通道化后的数组
+                    if i not in self.blackMap:#如果当前不在黑色切片数组内
+                        self.noBlackNormalizeSlicesTernary.append(self.normalizeSlicesTernary[i])#添加到去黑色切片数组
+            return self.noBlackNormalizeSlicesTernary
         # 返回归一化后的数组
         return self.normalizeSlicesTernary
 
@@ -174,20 +195,22 @@ class MultipleMRILoader:
 
     # 避免在三通道化后重复归一化，在这里不提供归一化后的数组的返回（毕竟一般也用不到）
     # 批量获取归一化数组
-    def getNormalizeSlices(self):
+    # black        是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
+    def getNormalizeSlices(self,black=True):
         if self.normalizeSlices is None:  # 如果为None就依次进行初始化创建
             self.normalizeSlices = []
             # 初始化加载器
             for i in range(len(self.loaders)):
-                self.normalizeSlices.append(self.loaders[i].getNormalizeSlices())
+                self.normalizeSlices.append(self.loaders[i].getNormalizeSlices(black))
         return self.normalizeSlices  # 返回三通道化图数组
     # 批量获取三通道化数组
-    def getNormalizeSlicesTernary(self):
+    # black        是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
+    def getNormalizeSlicesTernary(self,black=True):
         if self.normalizeSlicesTernary is None:  # 如果为None就依次进行初始化创建
             self.normalizeSlicesTernary = []
             # 初始化加载器
             for i in range(len(self.loaders)):
-                self.normalizeSlicesTernary.append(self.loaders[i].getNormalizeSlicesTernary())  # 以此进行初始化，并存储加载器数组
+                self.normalizeSlicesTernary.append(self.loaders[i].getNormalizeSlicesTernary(black))  # 以此进行初始化，并存储加载器数组
         return self.normalizeSlicesTernary  # 返回三通道化图数组
 
     # 多MRI文件时的保存
