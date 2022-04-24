@@ -44,16 +44,18 @@ from MRILoader import MRILoader,MultipleMRILoader
   本函数可以将归一化后的单通道数据转为三通道。如果之前没有进行归一化，会自动进行归一化。本函数会被getNormalizeSlicesTernary(self)、display(self,num=0)、save(self, savePath="./save/",r=None,fileName="", suffix=".jpg")自动调用。
 </p>
 
-<h4>.getNormalizeSlices()</h4>
+<h4>.getNormalizeSlices(black=True)</h4>
    <p>
+  black       是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
   获取归一化后的MRI切片图，如果没有归一化会自动进行归一化
 </p>
 <code>
   normalize=loader.getNormalizeSlices()
   </code>
   
-<h4>.getNormalizeSlicesTernary()</h4>
+<h4>.getNormalizeSlicesTernary(black=True)</h4>
    <p>
+  black       是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
   获取三通道化后的MRI切片图，如果没有三通道化会自动进行三通道化（同样如果没有归一化，会先进行归一化再进行三通道化）。(切片序号,w，h)
 
 </p>
@@ -92,16 +94,18 @@ black        是否包含纯黑的切片，如果包含的话就是True（默认
   <code>
   loaders = MultipleMRILoader('./data/*/T1w*.nii*')
   </code>
-  <h4>.getNormalizeSlices()</h4>
+  <h4>.getNormalizeSlices(black=True)</h4>
    <p>
+  black       是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
   获取归一后的MRI切片图，如果没有归一化会自动进行归一化，拿到的切片数据列表维度是以(文件序号,切片序号,w，h)的方式排列的。
 </p>
 <code>
   normalizeSlices=loaders.getNormalizeSlices()
   </code>
   
-<h4>.getNormalizeSlicesTernary()</h4>
+<h4>.getNormalizeSlicesTernary(black=True)</h4>
    <p>
+  black       是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
   获取三通道化后的MRI切片图，如果没有三通道化会自动进行三通道化（同样如果没有归一化，会先进行归一化再进行三通道化）
 拿到的切片数据列表维度是以(文件序号,切片序号,w，h)的方式排列的
 </p>
@@ -141,6 +145,12 @@ black        是否包含纯黑的切片，如果包含的话就是True（默认
   <li>
     normalizeSlicesTernary:存储三通道化后的MRI切片，在normalizeSlicesToTernary方法被调用后可用，应使用对应Getter方法，getNormalizeSlicesTernary进行获取
   </li>
+  <li>
+    notBlacknormalizeSlices:存储不包含纯黑色的归一化后的MRI切片，在getNormalizeSlices方法参数black为False被调用后可用，应使用对应Getter方法，getNormalizeSlices(black=False)进行获取
+  </li>
+  <li>
+   notBlacknormalizeSlicesTernary:存储不包含纯黑色的三通道化后的MRI切片，在getNormalizeSlicesTernary方法参数black为False被调用后可用，应使用对应Getter方法，getNormalizeSlicesTernary(black=False)进行获取
+  </li>
 </ul>
 
   <h3>MultipleMRILoader类（适用于读取复数MRI文件）</h3>
@@ -156,6 +166,12 @@ black        是否包含纯黑的切片，如果包含的话就是True（默认
   </li>
   <li>
     normalizeSlicesTernary:存储三通道化后的MRI切片，应使用对应Getter方法，getNormalizeSlicesTernary进行获取
+  </li>
+   <li>
+    notBlacknormalizeSlices:存储不包含纯黑色的归一化后的MRI切片，在getNormalizeSlices方法参数black为False被调用后可用，应使用对应Getter方法，getNormalizeSlices(black=False)进行获取
+  </li>
+  <li>
+   notBlacknormalizeSlicesTernary:存储不包含纯黑色的三通道化后的MRI切片，在getNormalizeSlicesTernary方法参数black为False被调用后可用，应使用对应Getter方法，getNormalizeSlicesTernary(black=False)进行获取
   </li>
 
 </ul>
