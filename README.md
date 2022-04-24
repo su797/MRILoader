@@ -133,7 +133,7 @@ black        是否包含纯黑的切片，如果包含的话就是True（默认
     slices:存储MRI切片，未被归一化和三通道化的原始切片，在构造函数调用后可用
   </li>
   <li>
-    blackMap:存储纯黑色切片下标的map，未被归一化和三通道化的原始切片，在normalize方法被调用后可用
+    blackMap:存储纯黑色切片的下标的map（对应slices、normalizeSlices、normalizeSlicesTernary），在normalize方法被调用后可用
   </li>
   <li>
     normalizeSlices:存储归一化后的MRI切片，在normalize方法被调用后可用，应使用对应Getter方法，getNormalizeSlices进行获取
