@@ -227,7 +227,7 @@ class MultipleMRILoader:
                 self.notBlackNormalizeSlicesTernary = []
                 # 初始化加载器
                 for i in range(len(self.loaders)):
-                        self.notBlackNormalizeSlicesTernary.append(self.loaders[i].getNormalizeSlicesTernary(black))
+                    self.notBlackNormalizeSlicesTernary.append(self.loaders[i].getNormalizeSlicesTernary(black))
             return self.notBlackNormalizeSlicesTernary  # 返回三通道化图数组
         else:
             if self.normalizeSlicesTernary is None:  # 如果为None就依次进行初始化创建
