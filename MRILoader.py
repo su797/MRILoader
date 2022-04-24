@@ -13,7 +13,10 @@ class MRILoader:
         self.imageObj = sitk.ReadImage(path)  # 获取图片数据（nii）
         self.slices = sitk.GetArrayViewFromImage(self.imageObj)  # 从视图中获取所有图片
         self.normalizeSlices = None         # 存储归一化后的切片图片数组（MRI单层图）
+        self.noBlackNormalizeSlices=None
         self.normalizeSlicesTernary = None  # 存储三通道化（RGB三通道）后的切片数组（MRI单层图）
+        self.noBlackNormalizeSlicesTernary=None
+
         self.blackMap = []                  # 存储了纯黑切片的下标
 
     # 对读取到的图片进行归一化
@@ -146,13 +149,13 @@ class MRILoader:
     # 获取归一化后的数组
     # black        是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
     def getNormalizeSlices(self,black=True):
-        self.noBlackNormalizeSlices=[]
         # 如果没被归一化，则需要先归一化
         if self.normalizeSlices is None:
             self.normalize()
-        #如果不要黑色帧
+        # 如果不要纯黑色切片
         if black == False:
-            if len(self.noBlackNormalizeSlices)<=0:
+            if self.noBlackNormalizeSlices is None:
+                self.noBlackNormalizeSlices=[]
                 for i in range(len(self.normalizeSlices)):
                     if i not in self.blackMap:
                         self.noBlackNormalizeSlices.append(self.normalizeSlices[i])
@@ -164,14 +167,14 @@ class MRILoader:
     # 获取三通道化后的数组
     # black        是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
     def getNormalizeSlicesTernary(self,black=True):
-        self.noBlackNormalizeSlicesTernary=[]
 
         # 如果没被三通道化，就进行三通道化
         if self.normalizeSlicesTernary is None:
             self.normalizeSlicesToTernary()
-        # 如果不要黑色帧
+        # 如果不要纯黑色切片
         if black == False:
-            if len(self.noBlackNormalizeSlicesTernary) <= 0:#当前没有三通道去黑色切片的数组
+            if self.noBlackNormalizeSlicesTernary is None:#当前没有三通道去黑色切片的数组
+                self.noBlackNormalizeSlicesTernary=[]
                 for i in range(len(self.normalizeSlicesTernary)):#遍历三通道化后的数组
                     if i not in self.blackMap:#如果当前不在黑色切片数组内
                         self.noBlackNormalizeSlicesTernary.append(self.normalizeSlicesTernary[i])#添加到去黑色切片数组
@@ -188,7 +191,10 @@ class MultipleMRILoader:
         # 获取路径下所有nii文件
         self.pathArr = glob.glob(path)  # 获取文件路径
         self.normalizeSlicesTernary = None  # 三通道化对象
+        self.notBlackNormalizeSlicesTernary = None  # 三通道化对象
         self.normalizeSlices= None  # 归一化对象
+        self.notBlackNormalize = None  # 三通道化对象
+
         self.loaders = []  # 加载器对象
         for i in range(len(self.pathArr)):  # 为每张图片创建对象
             self.loaders.append(MRILoader(self.pathArr[i]))  # 以此进行初始化，并存储加载器数组
@@ -197,21 +203,39 @@ class MultipleMRILoader:
     # 批量获取归一化数组
     # black        是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
     def getNormalizeSlices(self,black=True):
-        if self.normalizeSlices is None:  # 如果为None就依次进行初始化创建
-            self.normalizeSlices = []
-            # 初始化加载器
-            for i in range(len(self.loaders)):
-                self.normalizeSlices.append(self.loaders[i].getNormalizeSlices(black))
-        return self.normalizeSlices  # 返回三通道化图数组
+        #如果不包含纯黑色切片
+        if black is False:
+            if self.notBlackNormalize is None:  # 如果为None就依次进行初始化创建
+                self.notBlackNormalize = []
+                # 初始化加载器
+                for i in range(len(self.loaders)):
+                        self.notBlackNormalize.append(self.loaders[i].getNormalizeSlices(black))
+            return self.notBlackNormalize  # 返回三通道化图数组
+        else:
+            if self.normalizeSlices is None:  # 如果为None就依次进行初始化创建
+                self.normalizeSlices = []
+                # 初始化加载器
+                for i in range(len(self.loaders)):
+                        self.normalizeSlices.append(self.loaders[i].getNormalizeSlices(black))
+            return self.normalizeSlices  # 返回三通道化图数组
     # 批量获取三通道化数组
     # black        是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
     def getNormalizeSlicesTernary(self,black=True):
-        if self.normalizeSlicesTernary is None:  # 如果为None就依次进行初始化创建
-            self.normalizeSlicesTernary = []
-            # 初始化加载器
-            for i in range(len(self.loaders)):
-                self.normalizeSlicesTernary.append(self.loaders[i].getNormalizeSlicesTernary(black))  # 以此进行初始化，并存储加载器数组
-        return self.normalizeSlicesTernary  # 返回三通道化图数组
+        #如果不包含纯黑色切片
+        if black is False:
+            if self.notBlackNormalizeSlicesTernary is None:  # 如果为None就依次进行初始化创建
+                self.notBlackNormalizeSlicesTernary = []
+                # 初始化加载器
+                for i in range(len(self.loaders)):
+                        self.notBlackNormalizeSlicesTernary.append(self.loaders[i].getNormalizeSlicesTernary(black))
+            return self.notBlackNormalizeSlicesTernary  # 返回三通道化图数组
+        else:
+            if self.normalizeSlicesTernary is None:  # 如果为None就依次进行初始化创建
+                self.normalizeSlicesTernary = []
+                # 初始化加载器
+                for i in range(len(self.loaders)):
+                    self.normalizeSlicesTernary.append(self.loaders[i].getNormalizeSlicesTernary(black))  # 以此进行初始化，并存储加载器数组
+            return self.normalizeSlicesTernary  # 返回三通道化图数组
 
     # 多MRI文件时的保存
     # 保存图片
