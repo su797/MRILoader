@@ -73,8 +73,8 @@ from MRILoader import MRILoader,MultipleMRILoader
    <p>
   用于保存MRI图片
 savePath   存储路径<br/>
-r          范围，默认是全部，传入数字就是第n张，数组就是范围，如果数组中有多个值，那会用第一个和最后一个作为范围<br/>
-fileName   文件名,不填就用MRI（单张时）或序号（多张时）做文件名（填写的话会用名字_序号作为文件名），如果只保存一张则不会添加序号<br/>
+r          范围，默认是全部，传入数字就是第n张，传入一个列表就是范围，如果列表中有多个值，那会用列表中第一个和最后一个成员作为范围。<br/>
+fileName   文件名,不填的话就用MRI（单张时）或序号（多张时）做文件名（填写的话会用名字_序号作为文件名），如果只保存一张则不会添加序号<br/>
 suffix     文件后缀名<br/>
 black        是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False。如果是其他情况需要判断是否是纯黑切片请参照loader.blackMap ，这个内部数组内存储了纯黑切片的下标<br/>
 
@@ -113,9 +113,9 @@ black        是否包含纯黑的切片，如果包含的话就是True（默认
    <p>
   用于批量保存MRI图片<br/>
 savePath   存储路径<br/>
-r           范围，默认是全部，传入数字就是第n张，数组就是范围，如果数组中有多个值，那会用第一个和最后一个作为范围。<br/>
+r           范围，默认是全部，传入数字就是第n张，传入一个列表就是范围，如果列表中有多个值，那会用列表中第一个和最后一个成员作为范围。<br/>
 folderName  文件夹名，每个MRI文件的切片都分别创建文件夹存储，文件夹名为folderName序号，如果不设置则用序号作为各组MRI切片的文件夹名。要注意如果只保存一个MRI文件的话，默认不会额外为此MRI的切片创建文件夹，但是如果设置了文件夹名则会进行创建。<br/>
-fileName   文件名,不填就用MRI（单张时）或序号（多张时）做文件名（填写的话会用名字_序号作为文件名），如果只保存一张则不会添加序号。<br/>
+fileName   文件名,不填的话就用MRI（单张时）或序号（多张时）做文件名（填写的话会用名字_序号作为文件名），如果只保存一张则不会添加序号。<br/>
 suffix     文件后缀名。<br/>
 num          指定只保存第num个MRI文件，超出上限会自动改为最后一个。<br/>
 black        是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False。如果是其他情况需要判断是否是纯黑切片请参照loader.blackMap ，这个内部数组内存储了纯黑切片的下标。<br/>
@@ -123,3 +123,40 @@ black        是否包含纯黑的切片，如果包含的话就是True（默认
 <code>
   loaders.save()
   </code>
+<h2>可能会用到的成员变量（无Getter方法的成员变量需要自行判断是否被初始化）</h2>
+<h3>MRILoader类（适用于读取单一MRI文件）</h3>
+<ul>
+  <li>
+    imageObj:存储原始nii文件对象，保存了所有信息，在构造函数调用后可用
+  </li>
+  <li>
+    slices:存储MRI切片，未被归一化和三通道化的原始切片，在构造函数调用后可用
+  </li>
+  <li>
+    blackMap:存储纯黑色切片下标的map，未被归一化和三通道化的原始切片，在normalize方法被调用后可用
+  </li>
+  <li>
+    normalizeSlices:存储归一化后的MRI切片，在normalize方法被调用后可用，应使用对应Getter方法，getNormalizeSlices进行获取
+  </li>
+  <li>
+    normalizeSlicesTernary:存储三通道化后的MRI切片，在normalizeSlicesToTernary方法被调用后可用，应使用对应Getter方法，getNormalizeSlicesTernary进行获取
+  </li>
+</ul>
+
+  <h3>MultipleMRILoader类（适用于读取复数MRI文件）</h3>
+  <ul>
+  <li>
+    pathArr:存储着所有指定读取的nii、nii.gz文件路径，在构造函数调用后可用
+  </li>
+   <li>
+    loaders:MultipleMRILoader会为每个nii、nii.gz文件创建一个MRILoader类型的对象，这些对象存储在loaders中，在构造函数调用后可用
+  </li>
+  <li>
+    normalizeSlices:存储归一化后的MRI切片，应使用对应Getter方法，getNormalizeSlices进行获取
+  </li>
+  <li>
+    normalizeSlicesTernary:存储三通道化后的MRI切片，应使用对应Getter方法，getNormalizeSlicesTernary进行获取
+  </li>
+
+</ul>
+  
