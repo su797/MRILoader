@@ -24,10 +24,51 @@ from MRILoader import MRILoader,MultipleMRILoader
 </p>
 <h2>方法</h2>
 <h3>MRILoader类（适用于读取单一MRI文件）</h3>
-<h4>构造函数</h4>
+<h4>构造函数 __init__(self, path,position=None,rot90=None,flip=None)</h4>
+<div>
 <p>
- 我们在初始化MRILoader对象时，直接将MRI的文件。路径传递给MRILoader，就会自动读取对应文件。
+ 我们在初始化MRILoader对象时，直接将MRI的文件。路径传递给MRILoader，就会自动读取对应文件。<br/>
+ 由于MRI通常有三个断面，由于会进行归一化，三个断面需要分别进行归一化，否则会发生严重的断层现象。<br/>
+ 每次初始化仅会对一个方向的断面进行初始化（未指定的话就对读取的文件原始数组默认方向进行初始化）
+ 如果需要指定方向，可以通过position、rot90、flip三个参数进行调整。
 </p>
+<b>参数列表</b>
+<li>
+<b>path:</b> nii数据的路径
+</li>
+<li>
+<b>postion:</b> MRI的切片维度方位，接收值为三个成员的元组或字符串。
+<ul>
+<li>
+传入元组时，基于numpy的transpose方法，通过调换维度的方式更改MRI切片方向，如果不知道如何调换可以传入字符串由方法自动调换。
+</li>
+<li>
+传入元组时可以使用，rot90（基于numpy的rot90方法）、flip（基于numpy的flip方法）参数调节视图方向
+</li>
+<ul>
+<li>
+传入字符串时，以下分别代表三个视图<br/>
+                    axial或transverse或z    水平断面<br/>
+                    coronal或x              冠状面<br/>
+                    sagittal或y             矢状面<br/>
+</li>
+                但要注意，由于传入的MRI切片数组数据的不同，可能无法正确读取对应面，请自行确认。<br/>
+                传入字符串时同样可以使用rot90、flip参数调节视图方向，如果不传入rot90和flip，将由方法内置逻辑对切片方位进行处理。<br/>
+</ul>
+</ul>
+</li>
+<li>
+<b>rot90:</b>   切片旋转，以90度为单位，传入正值为逆时针，负值为顺时针，传入1代表逆时针旋转90度，2代表逆时针旋转180度，-1代表顺时针旋转90度，以此类推。<br/>
+                但要注意，MRI切片数组较为特殊，有时并不会以期待的方式运行，需要自行调节。<br/>
+</li>
+<li>
+<b>flip:</b>     切片翻转，输入值为维度，输入0为上下翻转，输入1为左右翻转。<br/>
+                但要注意，MRI切片数组较为特殊，有时并不会以期待的方式运行，需要自行调节。<br/>
+</li>
+<p>MRILoader基于以下结构的原始数据进行开发，请提前确认结构。（红色字体为对应维度输出的切片，对应numpy的transpose方法）</p>
+![img](./document/position.png)
+
+</div>
 <code>
   loader = MRILoader('./data/CC003/T1w_bscorr_SS.nii.gz')
   </code>

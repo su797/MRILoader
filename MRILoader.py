@@ -7,18 +7,102 @@ import os
 #version 1.2 2022/4/19
 
 class MRILoader:
-    # path，nii数据的路径
-    def __init__(self, path):
+    #
+    '''
+       path nii数据的路径
+       postion MRI的切片维度方位，接收值为三个成员的元组或字符串。
+                传入元组时，基于numpy的transpose方法，通过调换维度的方式更改MRI切片方向，如果不知道如何调换可以传入字符串由方法自动调换。
+                传入元组时可以使用，rot90（基于numpy的rot90方法）、flip（基于numpy的flip方法）参数调节视图方向
+                传入字符串时，以下分别代表三个视图
+                    axial或transverse    水平断面
+                    coronal              冠状面
+                    sagittal             矢状面
+                但要注意，由于传入数据的不同，可能无法正确读取对应面，请自行确认。
+                传入字符串时同样可以使用rot90、flip参数调节视图方向，如果不传入rot90和flip，将由方法内置逻辑对切片方位进行处理。
+        rot90   切片旋转，以90度为单位，传入正值为逆时针，负值为顺时针，传入1代表逆时针旋转90度，2代表逆时针旋转180度，-1代表顺时针旋转90度，以此类推。
+                但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
+        flip    切片翻转，输入值为维度，输入0为上下翻转，输入1为左右翻转。
+                但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
+    '''
+    def __init__(self, path,position=None,rot90=None,flip=None):
         # 初始化成员
         self.imageObj = sitk.ReadImage(path)  # 获取图片数据（nii）
         self.slices = sitk.GetArrayViewFromImage(self.imageObj)  # 从视图中获取所有图片
+        if position is not None:
+            self.slices=self.changePosition(self.slices, position,rot90,flip)
         self.normalizeSlices = None         # 存储归一化后的切片图片数组（MRI单层图）
         self.noBlackNormalizeSlices=None
         self.normalizeSlicesTernary = None  # 存储三通道化（RGB三通道）后的切片数组（MRI单层图）
         self.noBlackNormalizeSlicesTernary=None
 
         self.blackMap = []                  # 存储了纯黑切片的下标
-
+    '''
+        获取指定方位的MRI图
+        slices  MRI切片数组（必须是并未经本方法或其他方法改变数组维度的原始数组）
+        postion 维度方位，接收值为三个成员的元组或字符串。
+                传入元组时，基于numpy的transpose方法，通过调换维度的方式更改MRI切片方向，如果不知道如何调换可以传入字符串由方法自动调换。
+                传入元组时可以使用，rot90（基于numpy的rot90方法）、flip（基于numpy的flip方法）参数调节视图方向
+                传入字符串时，以下分别代表三个视图
+                    axial或transverse    水平断面
+                    coronal              冠状面
+                    sagittal             矢状面
+                但要注意，由于传入数据的不同，可能无法正确读取对应面，请自行确认。
+                传入字符串时同样可以使用rot90、flip参数调节视图方向，如果不传入rot90和flip，将由方法内置逻辑对切片方位进行处理。
+        rot90   切片旋转，以90度为单位，传入正值为逆时针，负值为顺时针，传入1代表逆时针旋转90度，2代表逆时针旋转180度，-1代表顺时针旋转90度，以此类推。
+                但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
+        flip    切片翻转，输入值为维度，输入0为上下翻转，输入1为左右翻转。
+                但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
+    '''
+    def getChangePostionSlices(self,slices,position,rot90=None,flip=None):
+        # 以指定方向获取切片
+        slices = np.array(np.transpose(slices, position))
+        # 如果要进行旋转
+        if rot90 is not None:
+            slices = np.rot90(slices, rot90)
+        # 如果要进行翻转
+        if flip is not None:
+            slices = np.flip(slices, flip)
+        # 返回结果
+        return slices
+    '''
+        更改为指定方位的MRI图
+        调用getChangePostionSlices方法，同样可以设置以下参数
+        slices  MRI切片数组（必须是并未经本方法或其他方法改变数组维度的原始数组）
+        postion 维度方位，接收值为三个成员的元组或字符串。
+                传入元组时，基于numpy的transpose方法，通过调换维度的方式更改MRI切片方向，如果不知道如何调换可以传入字符串由方法自动调换。
+                传入元组时可以使用，rot90（基于numpy的rot90方法）、flip（基于numpy的flip方法）参数调节视图方向
+                传入字符串时，以下分别代表三个视图
+                    axial或transverse    水平断面
+                    coronal              冠状面
+                    sagittal             矢状面
+                但要注意，由于传入数据的不同，可能无法正确读取对应面，请自行确认。
+                传入字符串时同样可以使用rot90、flip参数调节视图方向，如果不传入rot90和flip，将由方法内置逻辑对切片方位进行处理。
+        rot90   切片旋转，以90度为单位，传入正值为逆时针，负值为顺时针，传入1代表逆时针旋转90度，2代表逆时针旋转180度，-1代表顺时针旋转90度，以此类推。
+                但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
+        flip    切片翻转，输入值为维度，输入0为上下翻转，输入1为左右翻转。
+                但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
+    '''
+    def changePosition(self,slices,position,rot90=None,flip=None):
+        # 如果传入的是列表或元组
+        if isinstance(position,list) or isinstance(position,tuple):
+            return self.getChangePostionSlices(slices,position,rot90,flip)
+        elif isinstance(position,str):
+            if "axial" in position or "transverse" in position or position=="z":
+                #水平面
+                return self.getChangePostionSlices(slices, (0,1,2), rot90 if rot90 is not None else 2, flip if flip is not None else 0)
+                # return np.array(np.flip(np.rot90(np.transpose(self.slices, (0,1,2)),2),0))
+            elif "coronal" in position or position=="x":
+                #冠状面
+                return self.getChangePostionSlices(slices, (0,1,2), rot90 if rot90 is not None else -1, flip)
+                # return np.array(np.rot90(np.transpose(self.slices, (0,1,2)),-1))
+            elif "sagittal" in position or position=="y":
+                #矢状面
+                return self.getChangePostionSlices(slices, (2,0,1), rot90 if rot90 is not None else 2, flip if flip is not None else 2)
+                # return np.array(np.flip(np.rot90(np.transpose(self.slices, (2,0,1)),2),2))
+            # 如果文本不对
+            print("\033[31m MRILoader Warning: illegal field '"+str(position)+"'.Didn't change the orientation of the slice.Please use these parameters postion=[axial、transverse、coronal、sagittal] or [z、x、y].\033[0m")
+        print("\033[31m MRILoader Warning:Please check whether the 'position' parameters are wrong.Cannot be "+str(position)+"\033[0m")
+        return slices
     # 对读取到的图片进行归一化
     # 因为我们拿到的nii图片是单通道，且像素值不定，超过255，因此对每张图片都需要进行归一化处理
     def normalize(self):
@@ -185,8 +269,23 @@ class MRILoader:
 
 # 用于多个MRI加载（依赖MRILoader）
 class MultipleMRILoader:
-    # path，文件路径，支持glob语法
-    def __init__(self, path):
+    '''
+    path，文件路径，支持glob语法
+    postion MRI的切片维度方位，接收值为三个成员的元组或字符串。
+                传入元组时，基于numpy的transpose方法，通过调换维度的方式更改MRI切片方向，如果不知道如何调换可以传入字符串由方法自动调换。
+                传入元组时可以使用，rot90（基于numpy的rot90方法）、flip（基于numpy的flip方法）参数调节视图方向
+                传入字符串时，以下分别代表三个视图
+                    axial或transverse    水平断面
+                    coronal              冠状面
+                    sagittal             矢状面
+                但要注意，由于传入数据的不同，可能无法正确读取对应面，请自行确认。
+                传入字符串时同样可以使用rot90、flip参数调节视图方向，如果不传入rot90和flip，将由方法内置逻辑对切片方位进行处理。
+        rot90   切片旋转，以90度为单位，传入正值为逆时针，负值为顺时针，传入1代表逆时针旋转90度，2代表逆时针旋转180度，-1代表顺时针旋转90度，以此类推。
+                但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
+        flip    切片翻转，输入值为维度，输入0为上下翻转，输入1为左右翻转。
+                但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
+    '''
+    def __init__(self, path,position=None,rot90=None,flip=None):
         import glob
         # 获取路径下所有nii文件
         self.pathArr = glob.glob(path)  # 获取文件路径
@@ -197,7 +296,7 @@ class MultipleMRILoader:
 
         self.loaders = []  # 加载器对象
         for i in range(len(self.pathArr)):  # 为每张图片创建对象
-            self.loaders.append(MRILoader(self.pathArr[i]))  # 以此进行初始化，并存储加载器数组
+            self.loaders.append(MRILoader(self.pathArr[i],position=None,rot90=None,flip=None))  # 以此进行初始化，并存储加载器数组
 
     # 避免在三通道化后重复归一化，在这里不提供归一化后的数组的返回（毕竟一般也用不到）
     # 批量获取归一化数组
