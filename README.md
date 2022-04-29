@@ -129,8 +129,8 @@ normalize=loader.getNormalizeSlices()
 
 **参数列表**
 
-- **black:**是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False。
-- **reset:**默认值False，为True时即便是已经被三通道化过了，也重新进行三通道化
+- **black**:是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False。
+- **reset**:默认值False，为True时即便是已经被三通道化过了，也重新进行三通道化
 
 ```python
 normalizeSlicesTernary=loader.getNormalizeSlicesTernary()
@@ -181,7 +181,7 @@ slices=loader.changePosition(slices,(1,0,2),2,0)
 - **slices:** MRI切片数组（必须是并未经本方法或其他方法改变数组维度的单通道原始数组，因为必须改变断面后再进行归一化和三通道，否则会出现断层问题），默认值为None，可以为MRI切片数组、None、字符串。
 
   - **切片数组:** 对传入的MRI切片数组更改为指定断面方位
-  - **None:**默认，使用对象从本地读取或传入的slices作为切片数组，但不会进行Inplace操作修改对象内的slices函数，有需求请自行修改（修改后需要重新归一化和三通道化）。
+  - **None**:默认，使用对象从本地读取或传入的slices作为切片数组，但不会进行Inplace操作修改对象内的slices函数，有需求请自行修改（修改后需要重新归一化和三通道化）。
   
 - **postion**:
 
@@ -226,7 +226,7 @@ slices=loader.getChangePostionSlices(position="z") #将loader.slices，切换至
 - **slices:** MRI切片数组（必须是并未经本方法或其他方法改变数组维度的单通道原始数组，因为必须改变断面后再进行归一化和三通道，否则会出现断层问题），默认值为None，可以为MRI切片数组、None、字符串。
 
   - **切片数组:** 对传入的MRI切片数组更改为指定断面方位
-  - **None:**默认，使用对象从本地读取或传入的slices作为切片数组，但不会进行Inplace操作修改对象内的slices函数，有需求请自行修改（修改后需要重新归一化和三通道化）。
+  - **None**:默认，使用对象从本地读取或传入的slices作为切片数组，但不会进行Inplace操作修改对象内的slices函数，有需求请自行修改（修改后需要重新归一化和三通道化）。
   
 - **postion**:
 
