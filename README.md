@@ -4,12 +4,11 @@ version 1.5 2022/4/29
 
 ## 介绍
 
-<p>
-    本项目主要解决了nii、nii.gz格式的MRI图像单通道，且没有被归一化的问题，并进一步封装，让数据更规整更容易解析。同时提供了一些辅助函数。
-</p>
+本项目主要解决了nii、nii.gz格式的MRI图像单通道，且没有被归一化的问题，并进一步封装，让数据更规整更容易解析。同时提供了一些辅助函数。
+
 ## 准备
 
-<p>依赖及环境</p>
+依赖及环境
 
 <code>
     Python 3.7、
@@ -24,10 +23,9 @@ version 1.5 2022/4/29
 <code>from MRILoader import MRILoader,MultipleMRILoader
 </code>
 
-<p>
-<br/>
+
 引入后可以使用test.py文件对类进行测试。
-</p>
+
 ## 成员方法
 
 ### MRILoader类（适用于读取单一MRI文件）
