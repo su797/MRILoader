@@ -29,7 +29,7 @@ version 1.5 2022/4/29
 
 **切片(Slice)**:由于MRI输出的图像是三维图，也就是(切片数,w,h)，由多张图片组成，每一张图片我们称之为切片。
 
-**归一化(Normalize)**:由于nii、nii.gz读取到的MRI切片的像素值上限不固定，很多时候最高像素值都是几百甚至上千，而我们平时RGB图则是0~255，因此我们需要将切片的像素值统一到0~255，这也就是normalize方法的作用。可以使用getNormalizeSlices方法来获取归一化后的切片数组。
+**归一化(Normalize)**:由于nii、nii.gz读取到的MRI切片的像素值上限不固定，很多时候最高像素值都是几百甚至上千，而我们平时RGB图则是0到255，因此我们需要将切片的像素值统一到0到255，这也就是normalize方法的作用。可以使用getNormalizeSlices方法来获取归一化后的切片数组。
 
 **三通道化(Ternary)**:可以理解为转换为RGB，经过归一化以后，MRI切片的像素值已经变为0~255，但是依然是单通道（灰度）图，为了方便处理，我们将其转换为三通道，这也就是normalizeSlicesToTernary的作用。可以使用getNormalizeSlicesTernary方法来获取三通道化后的图片数组。
 
@@ -104,7 +104,7 @@ version 1.5 2022/4/29
 
 **参数列表**
 
-- **reset:**默认值False，为True时即便是已经被三通道化过了，也重新进行三通道化
+- **reset**:默认值False，为True时即便是已经被三通道化过了，也重新进行三通道化
 
 <h4>.getNormalizeSlices(black=True,reset=False,reset=False)</h4>
 <p>
@@ -113,8 +113,8 @@ version 1.5 2022/4/29
 
 **参数列表**
 
-- **black:**是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False。
-- **reset:**默认值False，为True时即便是已经被三通道化过了，也重新进行三通道化
+- **black**:是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False。
+- **reset**:默认值False，为True时即便是已经被三通道化过了，也重新进行三通道化
 
 ```python
 normalize=loader.getNormalizeSlices()
@@ -220,6 +220,7 @@ slices=loader.getChangePostionSlices(position="z") #将loader.slices，切换至
 <p>
 同时获取多个方位的MRI切片数组。可以获取包含同一个MRI的多个方位的MRI切片数组，结构为（方位下标,切片序号,w,h），方位序号根据position的传入顺序进行决定。内部调用了getChangePostionSlices方法。
 </p>
+
 **参数列表**
 
 - **slices:** MRI切片数组（必须是并未经本方法或其他方法改变数组维度的单通道原始数组，因为必须改变断面后再进行归一化和三通道，否则会出现断层问题），默认值为None，可以为MRI切片数组、None、字符串。
@@ -261,6 +262,7 @@ slices=loader.getMultiplePositionSlices(position=[(0,2,1),"x",[2,3,1]],rot90=[1,
 <h4>.display(num=0,slices=None)</h4>
 <p>
 用于显示读取的MRI图片，无需提前调用其他方法，如果检测到未将图片处理为RGB会自动先进行处理。num为显示第num张MRI图。(切片序号,w，h)
+
 **参数列表**
 
 - **num:** 切片序号
@@ -279,11 +281,11 @@ loader.display()
 
 **参数列表**
 
-- **savePath:**存储路径
-- **r:**范围，默认是全部，传入数字就是第n张，传入一个列表就是范围，如果列表中有多个值，那会用列表中第一个和最后一个成员作为范围。
+- **savePath**:存储路径
+- **r**:范围，默认是全部，传入数字就是第n张，传入一个列表就是范围，如果列表中有多个值，那会用列表中第一个和最后一个成员作为范围。
 - **fileName:** 文件名,不填的话就用MRI（单张时）或序号（多张时）做文件名（填写的话会用名字_序号作为文件名），如果只保存一张则不会添加序号
-- **suffix:**文件后缀名
-- **black:**是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False。如果是其他情况需要判断是否是纯黑切片请参照loader.blackMap ，这个内部数组内存储了纯黑切片的下标
+- **suffix**:文件后缀名
+- **black**:是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False。如果是其他情况需要判断是否是纯黑切片请参照loader.blackMap ，这个内部数组内存储了纯黑切片的下标
 
 ```python
 loader.save()
@@ -303,7 +305,7 @@ loader.save()
 </p>
 
 
-<b>参数列表</b>
+**参数列表**
 
 - **path:** nii数据的路径
 
@@ -335,14 +337,13 @@ loaders = MultipleMRILoader('./data/*/T1w*.nii*')
 
 <h4>.getNormalizeSlices(black=True,reset=False)</h4>
 <p>
-black       是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False<br/>
 获取归一后的MRI切片图，如果没有归一化会自动进行归一化，拿到的切片数据列表维度是以(文件序号,切片序号,w，h)的方式排列的。
 </p>
 
 **参数列表**
 
-- **black:**是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False。
-- **reset:**默认值False，为True时即便是已经被三通道化过了，也重新进行三通道化
+- **black**:是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False。
+- **reset**:默认值False，为True时即便是已经被三通道化过了，也重新进行三通道化
 
 ```python
 normalizeSlices=loaders.getNormalizeSlices()
@@ -358,8 +359,8 @@ normalizeSlices=loaders.getNormalizeSlices()
 
 **参数列表**
 
-- **black:**是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False。
-- **reset:**默认值False，为True时即便是已经被三通道化过了，也重新进行三通道化
+- **black**:是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False。
+- **reset**:默认值False，为True时即便是已经被三通道化过了，也重新进行三通道化
 
 ```python
 normalizeSlicesTernary=loaders.getNormalizeSlicesTernary()
@@ -370,15 +371,16 @@ normalizeSlicesTernary=loaders.getNormalizeSlicesTernary()
 <h4>.save(savePath="./save/", r=None, folderName="", fileName="", suffix=".jpg", num=None, black=True)</h4>
 <p>
 用于批量保存MRI图片
+
 **参数列表**
 
-- **savePath:**存储路径
-- **r:**范围，默认是全部，传入数字就是第n张，传入一个列表就是范围，如果列表中有多个值，那会用列表中第一个和最后一个成员作为范围。
-- **folderName:**文件夹名，每个MRI文件的切片都分别创建文件夹存储，文件夹名为folderName序号，如果不设置则用序号作为各组MRI切片的文件夹名。要注意如果只保存一个MRI文件的话，默认不会额外为此MRI的切片创建文件夹，但是如果设置了文件夹名则会进行创建。
-- **fileName:** 文件名,不填的话就用MRI（单张时）或序号（多张时）做文件名（填写的话会用名字_序号作为文件名），如果只保存一张则不会添加序号
-- **suffix:**文件后缀名
-- **num:**指定只保存第num个MRI文件，超出上限会自动改为最后一个。
-- **black:**是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False。如果是其他情况需要判断是否是纯黑切片请参照loader.blackMap ，这个内部数组内存储了纯黑切片的下标
+- **savePath**:存储路径
+- **r**:范围，默认是全部，传入数字就是第n张，传入一个列表就是范围，如果列表中有多个值，那会用列表中第一个和最后一个成员作为范围。
+- **folderName**:文件夹名，每个MRI文件的切片都分别创建文件夹存储，文件夹名为folderName序号，如果不设置则用序号作为各组MRI切片的文件夹名。要注意如果只保存一个MRI文件的话，默认不会额外为此MRI的切片创建文件夹，但是如果设置了文件夹名则会进行创建。
+- **fileName**: 文件名,不填的话就用MRI（单张时）或序号（多张时）做文件名（填写的话会用名字_序号作为文件名），如果只保存一张则不会添加序号
+- **suffix**:文件后缀名
+- **num**:指定只保存第num个MRI文件，超出上限会自动改为最后一个。
+- **black**:是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False。如果是其他情况需要判断是否是纯黑切片请参照loader.blackMap ，这个内部数组内存储了纯黑切片的下标
 
 ```python
 loaders.save()
