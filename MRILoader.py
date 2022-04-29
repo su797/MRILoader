@@ -7,9 +7,9 @@ import os
 #version 1.2 2022/4/19
 
 class MRILoader:
-    #
     '''
        path nii数据的路径
+       slices 如果传入MRI切片，则使用传入的切片，不读取path
        postion MRI的切片维度方位，接收值为三个成员的元组或字符串。
                 传入元组时，基于numpy的transpose方法，通过调换维度的方式更改MRI切片方向，如果不知道如何调换可以传入字符串由方法自动调换。
                 传入元组时可以使用，rot90（基于numpy的rot90方法）、flip（基于numpy的flip方法）参数调节视图方向
@@ -24,12 +24,16 @@ class MRILoader:
         flip    切片翻转，输入值为维度，输入0为上下翻转，输入1为左右翻转。
                 但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
     '''
-    def __init__(self, path,position=None,rot90=None,flip=None):
+    def __init__(self, path=None,slices=None,position=None,rot90=None,flip=None):
         # 初始化成员
-        self.imageObj = sitk.ReadImage(path)  # 获取图片数据（nii）
-        self.slices = sitk.GetArrayViewFromImage(self.imageObj)  # 从视图中获取所有图片
+        if slices is None:
+            self.imageObj = sitk.ReadImage(path)  # 获取图片数据（nii）
+            self.slices = sitk.GetArrayViewFromImage(self.imageObj)  # 从视图中获取所有图片
+        else:
+            self.slices=slices
+        #如果设定了方位，则直接使用指定方位的切片
         if position is not None:
-            self.slices=self.changePosition(self.slices, position,rot90,flip)
+            self.slices=self.getChangePostionSlices(self.slices, position,rot90,flip)
         self.normalizeSlices = None         # 存储归一化后的切片图片数组（MRI单层图）
         self.noBlackNormalizeSlices=None
         self.normalizeSlicesTernary = None  # 存储三通道化（RGB三通道）后的切片数组（MRI单层图）
@@ -37,23 +41,19 @@ class MRILoader:
 
         self.blackMap = []                  # 存储了纯黑切片的下标
     '''
-        获取指定方位的MRI图
-        slices  MRI切片数组（必须是并未经本方法或其他方法改变数组维度的原始数组）
-        postion 维度方位，接收值为三个成员的元组或字符串。
-                传入元组时，基于numpy的transpose方法，通过调换维度的方式更改MRI切片方向，如果不知道如何调换可以传入字符串由方法自动调换。
-                传入元组时可以使用，rot90（基于numpy的rot90方法）、flip（基于numpy的flip方法）参数调节视图方向
-                传入字符串时，以下分别代表三个视图
-                    axial或transverse    水平断面
-                    coronal              冠状面
-                    sagittal             矢状面
-                但要注意，由于传入数据的不同，可能无法正确读取对应面，请自行确认。
-                传入字符串时同样可以使用rot90、flip参数调节视图方向，如果不传入rot90和flip，将由方法内置逻辑对切片方位进行处理。
+        获取指定方位的MRI切片数组
+        slices  MRI切片数组（必须是并未经本方法或其他方法改变数组维度的单通道原始数组，因为必须改变断面后再进行归一化和三通道，否则会出现断层问题）
+        postion 维度方位，接收值为三个成员的元组/列表。
+                传入元组/列表时，基于numpy的transpose方法，通过调换维度的方式更改MRI切片方向，如果不知道如何调换可以传入字符串由方法自动调换。可以使用，rot90（基于numpy的rot90方法）、flip（基于numpy的flip方法）参数调节视图方向
         rot90   切片旋转，以90度为单位，传入正值为逆时针，负值为顺时针，传入1代表逆时针旋转90度，2代表逆时针旋转180度，-1代表顺时针旋转90度，以此类推。
                 但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
         flip    切片翻转，输入值为维度，输入0为上下翻转，输入1为左右翻转。
                 但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
-    '''
-    def getChangePostionSlices(self,slices,position,rot90=None,flip=None):
+        black   是否包含纯黑帧，只有slices为None或字符串时生效，默认为包含（True）
+        type    因为输入必须是单通道原始切片，所以可以选择输出时是否进行转换，默认值ternary输出归一化后的三通道。normalize或normalizeslices输出归一化切片，其他则依然输出单通道原始切片。
+        '''
+    def changePosition(self,slices,position,rot90=None,flip=None,black=True,type='ternary'):
+
         # 以指定方向获取切片
         slices = np.array(np.transpose(slices, position))
         # 如果要进行旋转
@@ -62,47 +62,107 @@ class MRILoader:
         # 如果要进行翻转
         if flip is not None:
             slices = np.flip(slices, flip)
-        # 返回结果
-        return slices
+        type=type.lower()
+        if 'ternary' in type:
+            # 如果需要获取三通道值，则转换一下
+            return MRILoader(slices=slices).getNormalizeSlicesTernary(black)
+        elif 'normalize' == type or 'normalizeslices' == type:
+            # 如果需要获取归一化后的值，则转换一下
+            return MRILoader(slices=slices).getNormalizeSlices(black)
+        else:
+            # 返回结果
+            return slices
+
     '''
-        更改为指定方位的MRI图
-        调用getChangePostionSlices方法，同样可以设置以下参数
-        slices  MRI切片数组（必须是并未经本方法或其他方法改变数组维度的原始数组）
-        postion 维度方位，接收值为三个成员的元组或字符串。
-                传入元组时，基于numpy的transpose方法，通过调换维度的方式更改MRI切片方向，如果不知道如何调换可以传入字符串由方法自动调换。
-                传入元组时可以使用，rot90（基于numpy的rot90方法）、flip（基于numpy的flip方法）参数调节视图方向
-                传入字符串时，以下分别代表三个视图
-                    axial或transverse    水平断面
-                    coronal              冠状面
-                    sagittal             矢状面
-                但要注意，由于传入数据的不同，可能无法正确读取对应面，请自行确认。
-                传入字符串时同样可以使用rot90、flip参数调节视图方向，如果不传入rot90和flip，将由方法内置逻辑对切片方位进行处理。
-        rot90   切片旋转，以90度为单位，传入正值为逆时针，负值为顺时针，传入1代表逆时针旋转90度，2代表逆时针旋转180度，-1代表顺时针旋转90度，以此类推。
-                但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
-        flip    切片翻转，输入值为维度，输入0为上下翻转，输入1为左右翻转。
-                但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
-    '''
-    def changePosition(self,slices,position,rot90=None,flip=None):
+           获取一个方位的MRI切片数组，对changePosition进行包装以达到可以接收字符串，提高易用性的效果。
+           可以获取包含一个MRI的一个方位的数组，（切片序号,w,h）
+            调用changePosition方法，同样可以设置以下参数
+            slices  MRI切片数组（必须是并未经本方法或其他方法改变数组维度的原始数组）,默认值为None
+                    可以为MRI切片数组、None、字符串
+                    切片数组    对传入的MRI切片数组更改为指定断面方位
+                    None       默认，使用对象从本地读取或传入的slices作为切片数组
+                    字符串      值为normalize或normalizeslices时，使用normalizeSlices作为切片数组，包含ternary时，使用normalizeSlicesTernary作为切片数组。
+                                如果black参数传入True，则不包含纯黑帧
+            postion 维度方位数组，接收值为三个成员的元组/数组或字符串。默认None时则代表不对切片做处理。
+                    例如[0,1,2],"z",[2,1,0]，这样可以获取三个不同方位的切片。
+                    元组/列表和字符串的具体值参照如下。
+                    传入元组/列表时，基于numpy的transpose方法，通过调换维度的方式更改MRI切片方向，如果不知道如何调换可以传入字符串由方法自动调换。
+                    传入元组/列表时可以使用，rot90（基于numpy的rot90方法）、flip（基于numpy的flip方法）参数调节视图方向
+                    传入字符串时，以下分别代表三个视图
+                        axial或transverse或z    水平断面
+                        coronal或x              冠状面
+                        sagittal或y             矢状面
+                    但要注意，由于传入数据的不同，可能无法正确读取对应面，请自行确认。
+                    传入字符串时同样可以使用rot90、flip参数调节视图方向，如果不传入rot90和flip，将由方法内置逻辑对切片方位进行处理。
+            rot90   切片旋转，默认None不调整，以90度为单位，传入正值为逆时针，负值为顺时针，传入1代表逆时针旋转90度，2代表逆时针旋转180度，-1代表顺时针旋转90度，以此类推。
+                    但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
+            flip    切片翻转，默认None不调整，输入值为维度，输入0为上下翻转，输入1为左右翻转。
+                    但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
+            black   是否包含纯黑帧，只有slices为None或字符串时生效，默认为包含（True）
+            type    因为输入必须是单通道原始切片，所以可以选择输出时是否进行转换，默认值ternary输出归一化后的三通道。normalize或normalizeslices输出归一化切片，其他则依然输出单通道原始切片。
+        '''
+    def getChangePostionSlices(self,slices=None,position=None,rot90=None,flip=None,black=True,type="ternary"):
+        #如果是None的话就自动使用类内的成员切片数组
+        if slices is None:
+            slices=self.slices
         # 如果传入的是列表或元组
         if isinstance(position,list) or isinstance(position,tuple):
-            return self.getChangePostionSlices(slices,position,rot90,flip)
+            return self.changePosition(slices,position,rot90,flip,black,type)
         elif isinstance(position,str):
+            position=position.lower()
             if "axial" in position or "transverse" in position or position=="z":
                 #水平面
-                return self.getChangePostionSlices(slices, (0,1,2), rot90 if rot90 is not None else 2, flip if flip is not None else 0)
-                # return np.array(np.flip(np.rot90(np.transpose(self.slices, (0,1,2)),2),0))
+                return self.changePosition(slices, (0,1,2), rot90 if rot90 is not None else 2, flip if flip is not None else 0,black,type)
             elif "coronal" in position or position=="x":
                 #冠状面
-                return self.getChangePostionSlices(slices, (0,1,2), rot90 if rot90 is not None else -1, flip)
-                # return np.array(np.rot90(np.transpose(self.slices, (0,1,2)),-1))
+                return self.changePosition(slices, (0,1,2), rot90 if rot90 is not None else -1, flip,black,type)
             elif "sagittal" in position or position=="y":
                 #矢状面
-                return self.getChangePostionSlices(slices, (2,0,1), rot90 if rot90 is not None else 2, flip if flip is not None else 2)
-                # return np.array(np.flip(np.rot90(np.transpose(self.slices, (2,0,1)),2),2))
-            # 如果文本不对
+                return self.changePosition(slices, (2,0,1), rot90 if rot90 is not None else 2, flip if flip is not None else 2,black,type)
+            # 如果方位不对
             print("\033[31m MRILoader Warning: illegal field '"+str(position)+"'.Didn't change the orientation of the slice.Please use these parameters postion=[axial、transverse、coronal、sagittal] or [z、x、y].\033[0m")
         print("\033[31m MRILoader Warning:Please check whether the 'position' parameters are wrong.Cannot be "+str(position)+"\033[0m")
         return slices
+
+    '''
+           获取多个方位的MRI图数组
+           可以获取包含同一个MRI的多个方位的数组，（方位下标,切片序号,w,h），方位序号根据position的传入顺序进行决定
+            调用getChangePostionSlices方法，同样可以设置以下参数
+            slices  MRI切片数组（必须是并未经本方法或其他方法改变数组维度的原始数组）,默认值为None
+                    可以为MRI切片数组、None、字符串
+                    切片数组    对传入的MRI切片数组更改为指定断面方位
+                    None       默认，使用对象从本地读取或传入的slices作为切片数组
+                    字符串      值为normalize或normalizeslices时，使用normalizeSlices作为切片数组，包含ternary时，使用normalizeSlicesTernary作为切片数组。
+                                如果black参数传入True，则不包含纯黑帧
+            postion 维度方位数组，接收值为n*3的元组/数组或一维字符串数组，也可以混搭。默认None时则代表获取三个断面。
+                    例如[[0,1,2],"z",[2,1,0]]，这样可以获取三个不同方位的切片。
+                    元组/列表和字符串的具体值参照如下。
+                    传入元组/列表时，基于numpy的transpose方法，通过调换维度的方式更改MRI切片方向，如果不知道如何调换可以传入字符串由方法自动调换。
+                    传入元组/列表时可以使用，rot90（基于numpy的rot90方法）、flip（基于numpy的flip方法）参数调节视图方向
+                    传入字符串时，以下分别代表三个视图
+                        axial或transverse或z    水平断面
+                        coronal或x              冠状面
+                        sagittal或y             矢状面
+                    但要注意，由于传入数据的不同，可能无法正确读取对应面，请自行确认。
+                    传入字符串时同样可以使用rot90、flip参数调节视图方向，如果不传入rot90和flip，将由方法内置逻辑对切片方位进行处理。
+            rot90   切片旋转一维数组，需要与position成员对应，如果不需要调整需要用None占位，当然如果都不需要调整使用默认None即可，以90度为单位，传入正值为逆时针，负值为顺时针，传入1代表逆时针旋转90度，2代表逆时针旋转180度，-1代表顺时针旋转90度，以此类推。
+                    但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
+            flip    切片翻转一维数组，需要与position成员对应，如果不需要调整需要用None占位，当然如果都不需要调整使用默认None即可，输入值为维度，输入0为上下翻转，输入1为左右翻转。
+                    但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
+            black   是否包含纯黑帧，只有slices为None或字符串时生效，默认为包含（True）
+            type    因为输入必须是单通道原始切片，所以可以选择输出时是否进行转换，默认值ternary输出归一化后的三通道。normalize或normalizeslices输出归一化切片，其他则依然输出单通道原始切片。
+        '''
+    def getMultiplePositionSlices(self,slices=None,position=None,rot90=None,flip=None,black=True,type="ternary"):
+        #存储复数个方位的切片
+        multiplePositionSlices=[]
+        #如果是None，则默认是三个断面
+        if position is None:
+            position=['z','x','y']
+        # 如果是数组，则代表定义了方向
+        if isinstance(position,list) or isinstance(position,tuple):
+            for i,p in enumerate(position):
+                multiplePositionSlices.append(self.getChangePostionSlices(slices, p, None if rot90 is None else rot90[i], None if flip is None else flip[i], black,type))
+        return multiplePositionSlices
     # 对读取到的图片进行归一化
     # 因为我们拿到的nii图片是单通道，且像素值不定，超过255，因此对每张图片都需要进行归一化处理
     def normalize(self):
@@ -129,11 +189,12 @@ class MRILoader:
         print("Complete normalization!")  # 完成归一
 
     # 转换为三通道图片
-    def normalizeSlicesToTernary(self):
+    def normalizeSlicesToTernary(self,reset=False):
         # 判断是否已经归一化，如果没有则先进行归一化
-        if self.normalizeSlices is None:
+        if self.normalizeSlices is None or reset is True:
             self.normalize()
         print("Start Ternization...")
+
         dimension = list(self.slices.shape)  # 获取切片数据维度
         dimension.append(3)  # 增加颜色通道
         self.normalizeSlicesTernary = np.zeros(dimension)  # 三通道化的图片数组（RGB三通道），但是因为是单通道转多通道，所以通道顺序无所谓
@@ -159,12 +220,15 @@ class MRILoader:
             进行转换
         '''
     # 显示指定的图片，num为切片序号
-    def display(self, num=0):
-        # 如果没有进行正则三通道化，就先进行
-        if self.normalizeSlicesTernary is None:
-            self.normalizeSlicesToTernary()
+    #slices 传入一个切片数组，显示第num个切片
+    def display(self, num=0,slices=None):
+        if slices is None:
+            # 如果没有进行正则三通道化，就先进行
+            if self.normalizeSlicesTernary is None:
+                self.normalizeSlicesToTernary()
+            slices=self.normalizeSlicesTernary
         # 显示图片
-        cv2.imshow("MRI", self.normalizeSlicesTernary[num])
+        cv2.imshow("MRI", slices[num])
         cv2.waitKey()
         cv2.destroyAllWindows()
 
@@ -232,9 +296,10 @@ class MRILoader:
     # 建议使用getter来访问这些数组，确保这些数组已经被初始化，或自行调用方法进行处理
     # 获取归一化后的数组
     # black        是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
-    def getNormalizeSlices(self,black=True):
+    # reset         默认值False，为True时即便是已经被归一化过了，也重新进行归一化
+    def getNormalizeSlices(self,black=True,reset=False):
         # 如果没被归一化，则需要先归一化
-        if self.normalizeSlices is None:
+        if self.normalizeSlices is None or reset is True:
             self.normalize()
         # 如果不要纯黑色切片
         if black == False:
@@ -250,11 +315,12 @@ class MRILoader:
 
     # 获取三通道化后的数组
     # black        是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
-    def getNormalizeSlicesTernary(self,black=True):
+    #reset         默认值False，为True时即便是已经被三通道化过了，也重新进行三通道化
+    def getNormalizeSlicesTernary(self,black=True,reset=False):
 
         # 如果没被三通道化，就进行三通道化
-        if self.normalizeSlicesTernary is None:
-            self.normalizeSlicesToTernary()
+        if self.normalizeSlicesTernary is None or reset is True:
+            self.normalizeSlicesToTernary(reset)
         # 如果不要纯黑色切片
         if black == False:
             if self.noBlackNormalizeSlicesTernary is None:#当前没有三通道去黑色切片的数组
@@ -301,51 +367,52 @@ class MultipleMRILoader:
     # 避免在三通道化后重复归一化，在这里不提供归一化后的数组的返回（毕竟一般也用不到）
     # 批量获取归一化数组
     # black        是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
-    def getNormalizeSlices(self,black=True):
+    def getNormalizeSlices(self,black=True,reset=False):
         #如果不包含纯黑色切片
         if black is False:
-            if self.notBlackNormalize is None:  # 如果为None就依次进行初始化创建
+            if self.notBlackNormalize is None or reset is True:  # 如果为None就依次进行初始化创建
                 self.notBlackNormalize = []
                 # 初始化加载器
                 for i in range(len(self.loaders)):
-                        self.notBlackNormalize.append(self.loaders[i].getNormalizeSlices(black))
+                        self.notBlackNormalize.append(self.loaders[i].getNormalizeSlices(black,reset))
             return self.notBlackNormalize  # 返回三通道化图数组
         else:
-            if self.normalizeSlices is None:  # 如果为None就依次进行初始化创建
+            if self.normalizeSlices is None or reset is True:  # 如果为None就依次进行初始化创建
                 self.normalizeSlices = []
                 # 初始化加载器
                 for i in range(len(self.loaders)):
-                        self.normalizeSlices.append(self.loaders[i].getNormalizeSlices(black))
+                        self.normalizeSlices.append(self.loaders[i].getNormalizeSlices(black,reset))
             return self.normalizeSlices  # 返回三通道化图数组
     # 批量获取三通道化数组
     # black        是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False
-    def getNormalizeSlicesTernary(self,black=True):
+    def getNormalizeSlicesTernary(self,black=True,reset=False):
         #如果不包含纯黑色切片
         if black is False:
-            if self.notBlackNormalizeSlicesTernary is None:  # 如果为None就依次进行初始化创建
+            if self.notBlackNormalizeSlicesTernary is None or reset is True:  # 如果为None就依次进行初始化创建
                 self.notBlackNormalizeSlicesTernary = []
                 # 初始化加载器
                 for i in range(len(self.loaders)):
-                    self.notBlackNormalizeSlicesTernary.append(self.loaders[i].getNormalizeSlicesTernary(black))
+                    self.notBlackNormalizeSlicesTernary.append(self.loaders[i].getNormalizeSlicesTernary(black,reset))
             return self.notBlackNormalizeSlicesTernary  # 返回三通道化图数组
         else:
-            if self.normalizeSlicesTernary is None:  # 如果为None就依次进行初始化创建
+            if self.normalizeSlicesTernary is None or reset is True:  # 如果为None就依次进行初始化创建
                 self.normalizeSlicesTernary = []
                 # 初始化加载器
                 for i in range(len(self.loaders)):
-                    self.normalizeSlicesTernary.append(self.loaders[i].getNormalizeSlicesTernary(black))  # 以此进行初始化，并存储加载器数组
+                    self.normalizeSlicesTernary.append(self.loaders[i].getNormalizeSlicesTernary(black,reset))  # 以此进行初始化，并存储加载器数组
             return self.normalizeSlicesTernary  # 返回三通道化图数组
-
-    # 多MRI文件时的保存
-    # 保存图片
-    # savePath     存储路径，如果不存在会自动创建
-    # r            范围，默认是全部，传入数字就是第n张，数组就是范围，如果数组中有多个值，那会用第一个和最后一个作为范围
-    # folderName  文件夹名，每个MRI文件的切片都分别创建文件夹存储，文件夹名为folderName序号，如果不设置则用序号作为各组MRI切片的文件夹名。
-    #             要注意如果只保存一个MRI文件的话，默认不会额外为此MRI的切片创建文件夹，但是如果设置了文件夹名则会进行创建。
-    # fileName    文件名,不填就用MRI（单张时）或序号（多张时）做文件名（填写的话会用名字_序号作为文件名），如果只保存一张则不会添加序号
-    # suffix      存储的文件后缀名，一般为jpg或png
-    # num          指定只保存第num个MRI文件，超出上限会自动改为最后一个
-    # black        是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False。
+    '''
+    多MRI文件时的保存
+    保存图片
+    savePath     存储路径，如果不存在会自动创建
+    r            范围，默认是全部，传入数字就是第n张，数组就是范围，如果数组中有多个值，那会用第一个和最后一个作为范围
+    folderName  文件夹名，每个MRI文件的切片都分别创建文件夹存储，文件夹名为folderName序号，如果不设置则用序号作为各组MRI切片的文件夹名。
+                要注意如果只保存一个MRI文件的话，默认不会额外为此MRI的切片创建文件夹，但是如果设置了文件夹名则会进行创建。
+    fileName    文件名,不填就用MRI（单张时）或序号（多张时）做文件名（填写的话会用名字_序号作为文件名），如果只保存一张则不会添加序号
+    suffix      存储的文件后缀名，一般为jpg或png
+    num          指定只保存第num个MRI文件，超出上限会自动改为最后一个
+    black        是否包含纯黑的切片，如果包含的话就是True（默认），如果希望不包含的话就是False。
+    '''
     def save(self, savePath="./save/", r=None, folderName="", fileName="", suffix=".jpg", num=None, black=True):
         # 如果设置了只存储某一个MRI
         if num is not None:
