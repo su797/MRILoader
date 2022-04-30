@@ -2,6 +2,8 @@
 
 version 1.5 2022/4/29
 
+[日本語バージョン](https://github.com/su797/MRILoader/blob/main/README_ja.md)
+
 ## 介绍
 
 本项目主要解决了nii、nii.gz格式的MRI图像单通道，且没有被归一化的问题，并进一步封装，让数据更规整更容易解析。同时提供了一些辅助方法。
