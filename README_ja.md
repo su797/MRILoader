@@ -3,6 +3,8 @@
 # MRILoader
 
 version 1.5 2022/4/29
+https://github.com/su797/MRILoader/blob/main/README_ja.md
+[中国语版本](https://github.com/su797/MRILoader/blob/main/README.md)
 
 ## はじめに
 
