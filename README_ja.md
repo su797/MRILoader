@@ -140,7 +140,7 @@ normalizeSlicesTernary=loader.getNormalizeSlicesTernary()
 
 
 
-<h4>.changePosition(slices,position,rot90=None,flip=None,black=True,type='ternary')</h4>
+<h4>.changePosition(slices,position,rot90=None,flip=None,black=True,type='ternary',consistent=False)</h4>
 
 <p>指定した方位（断面）のMRIスライス配列を取得します。通常、このメソッドは直接呼び出されません。指定した方位のMRIスライス配列を取得するにはgetChangePostionSlicesメソッドを使用します。</p>
 
@@ -158,6 +158,8 @@ normalizeSlicesTernary=loader.getNormalizeSlicesTernary()
 
 - **type:** シングルチャンネルMRIスライスを入力するので、出力時に正規化或いは3チャンネル化に変換するかどうかを選ぶことができます。デフォルト値ternaryの場合は正規化した3チャネルスライスを出力することができます。normalizeまたはnormalizeslicesは正規化スライスを出力し、その他はシングルチャネルのスライスを出力します。
 
+- **consistent**: Trueの場合は、オブジェクト中の配列は処理されたスライス配列方向/断面にすることになります。slicesパラメータがNoneの場合にのみ有効になります。
+
 ```python
 slices=某MRI切片数组
 #入力したslicesスライス配列の次元を1,0,2配列に変更し、その後、反時計回りに180度回転し、上下に反転
@@ -166,7 +168,7 @@ slices=loader.changePosition(slices,(1,0,2),2,0)
 
 
 
-<h4>.getChangePostionSlices(slices=None,position=None,rot90=None,flip=None,black=True,type="ternary")</h4>
+<h4>.getChangePostionSlices(slices=None,position=None,rot90=None,flip=None,black=True,type="ternary",consistent=False)</h4>
 
 <p>
 指定した方位（断面）のMRIスライス配列を取得します。changePositionをより使い安くカプセル化したものです。
@@ -203,13 +205,15 @@ slices=loader.changePosition(slices,(1,0,2),2,0)
 
 - **type:** シングルチャンネルMRIスライスを入力するので、出力時に正規化或いは3チャンネル化に変換するかどうかを選ぶことができます。デフォルト値ternaryの場合は正規化した3チャネルスライスを出力することができます。normalizeまたはnormalizeslicesは正規化スライスを出力し、その他はシングルチャネルのスライスを出力します。
 
+- **consistent**: Trueの場合は、オブジェクト中の配列は処理されたスライス配列方向/断面にすることになります。slicesパラメータがNoneの場合にのみ有効になります。
+
 ```python
-slices=loader.getChangePostionSlices(position="z") #loader.slicesを水平断面に切り替える（Inplace操作ではない）
+slices=loader.getChangePostionSlices(position="z") #loader.slicesを水平断面に切り替える（consistent操作ではない）
 ```
 
 
 
-<h4>.getMultiplePositionSlices(slices=None,position=None,rot90=None,flip=None,black=True,type="ternary")</h4>
+<h4>.getMultiplePositionSlices(slices=None,position=None,rot90=None,flip=None,black=True,type="ternary",consistent=False)</h4>
 
 <p>
 同一MRIスライス配列の複数の方位（断面）を取得できます。戻り値構造は（方位番号,スライス番号,w,h）となります。方位番号はpositionの中の値の順番で決めます。
@@ -243,6 +247,7 @@ slices=loader.getChangePostionSlices(position="z") #loader.slicesを水平断面
 - **flip:** スライスフリップタプル/リストで，positionで指定した値と対応する必要があります。調整しない場合はNoneを入れば大丈夫です。全部調整する必要が無ければデフォルトのNoneで結構です。タプル/リスト中の値は0が上下反転、1が左右反転です。 しかし、期待どおりにフリップされない場合があります。指定された方向にフリップすることを実現するためにrot90と一緒に使用することがおすすめです。
 - **black:** 真っ黒なスライスを含めるかどうかは、含めるとTrue(デフォルト)、含まない場合False
 - **type:** シングルチャンネルMRIスライスを入力するので、出力時に正規化或いは3チャンネル化に変換するかどうかを選ぶことができます。デフォルト値ternaryの場合は正規化した3チャネルスライスを出力することができます。normalizeまたはnormalizeslicesは正規化スライスを出力し、その他はシングルチャネルのスライスを出力します。
+- **consistent**: Trueの場合は、オブジェクト中の配列は処理されたスライス配列方向/断面にすることになります。slicesパラメータがNoneの場合にのみ有効になります。 
 
 ```python
 #loader.slicesの(0,2,1)、冠状断面、(2,3,1)に対して，(0,2,1)を反時計回りに90度回転し，(2,3,1)を時計回りに180度回転する
@@ -370,5 +375,4 @@ normalizeSlicesTernary=loaders.getNormalizeSlicesTernary()
 ```python
 loaders.save()
 ```
-
 

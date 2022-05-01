@@ -51,9 +51,10 @@ class MRILoader:
                 但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
         black   是否包含纯黑帧，只有slices为None或字符串时生效，默认为包含（True）
         type    因为输入必须是单通道原始切片，所以可以选择输出时是否进行转换，默认值ternary输出归一化后的三通道。normalize或normalizeslices输出归一化切片，其他则依然输出单通道原始切片。
+        consistent 默认为False，如果为True就代表使用处理后的切片数组代替对象内的slices数组，且所有对象内的数组的方向都会发生改变。
+                此属性应由getChangePostionSlices方法控制，确保传入的slices可以替换本对象中的normalizeSlices。
         '''
-    def changePosition(self,slices,position,rot90=None,flip=None,black=True,type='ternary'):
-
+    def changePosition(self,slices,position,rot90=None,flip=None,black=True,type='ternary',consistent=False):
         # 以指定方向获取切片
         slices = np.array(np.transpose(slices, position))
         # 如果要进行旋转
@@ -62,27 +63,37 @@ class MRILoader:
         # 如果要进行翻转
         if flip is not None:
             slices = np.flip(slices, flip)
-        type=type.lower()
-        if 'ternary' in type:
-            # 如果需要获取三通道值，则转换一下
-            return MRILoader(slices=slices).getNormalizeSlicesTernary(black)
-        elif 'normalize' == type or 'normalizeslices' == type:
-            # 如果需要获取归一化后的值，则转换一下
-            return MRILoader(slices=slices).getNormalizeSlices(black)
-        else:
+        if consistent is True:
+            self.slices = slices
+        if type is not None:
+            type=type.lower()
+            if 'ternary' in type:
+                # 如果需要获取三通道值，则转换一下
+                slices = MRILoader(slices=slices).getNormalizeSlicesTernary(black)
+                if consistent is True:
+                    if black is True:
+                        self.normalizeSlicesTernary=slices
+                    else:
+                        self.noBlackNormalizeSlicesTernary=slices
+            elif 'normalize' == type or 'normalizeslices' == type:
+                slices = MRILoader(slices=slices).getNormalizeSlices(black)
+                # 如果需要获取归一化后的值，则转换一下
+                if consistent is True:
+                    if black is True:
+                        self.normalizeSlices=slices
+                    else:
+                        self.noBlackNormalizeSlices=slices
             # 返回结果
-            return slices
+        return slices
 
     '''
            获取一个方位的MRI切片数组，对changePosition进行包装以达到可以接收字符串，提高易用性的效果。
            可以获取包含一个MRI的一个方位的数组，（切片序号,w,h）
             调用changePosition方法，同样可以设置以下参数
             slices  MRI切片数组（必须是并未经本方法或其他方法改变数组维度的原始数组）,默认值为None
-                    可以为MRI切片数组、None、字符串
+                    可以为MRI切片数组、None
                     切片数组    对传入的MRI切片数组更改为指定断面方位
                     None       默认，使用对象从本地读取或传入的slices作为切片数组
-                    字符串      值为normalize或normalizeslices时，使用normalizeSlices作为切片数组，包含ternary时，使用normalizeSlicesTernary作为切片数组。
-                                如果black参数传入True，则不包含纯黑帧
             postion 维度方位数组，接收值为三个成员的元组/数组或字符串。默认None时则代表不对切片做处理。
                     例如[0,1,2],"z",[2,1,0]，这样可以获取三个不同方位的切片。
                     元组/列表和字符串的具体值参照如下。
@@ -100,25 +111,28 @@ class MRILoader:
                     但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
             black   是否包含纯黑帧，只有slices为None或字符串时生效，默认为包含（True）
             type    因为输入必须是单通道原始切片，所以可以选择输出时是否进行转换，默认值ternary输出归一化后的三通道。normalize或normalizeslices输出归一化切片，其他则依然输出单通道原始切片。
+            consistent 默认为False，如果为True就代表使用处理后的切片数组代替对象内的slices数组，只有slices属性为None时生效。且所有对象内的数组的方向都会发生改变。
         '''
-    def getChangePostionSlices(self,slices=None,position=None,rot90=None,flip=None,black=True,type="ternary"):
+    def getChangePostionSlices(self,slices=None,position=None,rot90=None,flip=None,black=True,type="ternary",consistent=False):
         #如果是None的话就自动使用类内的成员切片数组
         if slices is None:
             slices=self.slices
+        else:
+            consistent=False#如果是传入切片的话无法执行consistent操作
         # 如果传入的是列表或元组
         if isinstance(position,list) or isinstance(position,tuple):
-            return self.changePosition(slices,position,rot90,flip,black,type)
+            return self.changePosition(slices,position,rot90,flip,black,type,consistent)
         elif isinstance(position,str):
             position=position.lower()
             if "axial" in position or "transverse" in position or position=="z":
                 #水平面
-                return self.changePosition(slices, (0,1,2), rot90 if rot90 is not None else 2, flip if flip is not None else 0,black,type)
+                return self.changePosition(slices, (0,1,2), rot90 if rot90 is not None else 2, flip if flip is not None else 0,black,type,consistent)
             elif "coronal" in position or position=="x":
                 #冠状面
-                return self.changePosition(slices, (0,1,2), rot90 if rot90 is not None else -1, flip,black,type)
+                return self.changePosition(slices, (0,1,2), rot90 if rot90 is not None else -1, flip,black,type,consistent)
             elif "sagittal" in position or position=="y":
                 #矢状面
-                return self.changePosition(slices, (2,0,1), rot90 if rot90 is not None else 2, flip if flip is not None else 2,black,type)
+                return self.changePosition(slices, (2,0,1), rot90 if rot90 is not None else 2, flip if flip is not None else 2,black,type,consistent)
             # 如果方位不对
             print("\033[31m MRILoader Warning: illegal field '"+str(position)+"'.Didn't change the orientation of the slice.Please use these parameters postion=[axial、transverse、coronal、sagittal] or [z、x、y].\033[0m")
         print("\033[31m MRILoader Warning:Please check whether the 'position' parameters are wrong.Cannot be "+str(position)+"\033[0m")
@@ -129,11 +143,9 @@ class MRILoader:
            可以获取包含同一个MRI的多个方位的数组，（方位下标,切片序号,w,h），方位序号根据position的传入顺序进行决定
             调用getChangePostionSlices方法，同样可以设置以下参数
             slices  MRI切片数组（必须是并未经本方法或其他方法改变数组维度的原始数组）,默认值为None
-                    可以为MRI切片数组、None、字符串
+                    可以为MRI切片数组、None
                     切片数组    对传入的MRI切片数组更改为指定断面方位
                     None       默认，使用对象从本地读取或传入的slices作为切片数组
-                    字符串      值为normalize或normalizeslices时，使用normalizeSlices作为切片数组，包含ternary时，使用normalizeSlicesTernary作为切片数组。
-                                如果black参数传入True，则不包含纯黑帧
             postion 维度方位数组，接收值为n*3的元组/数组或一维字符串数组，也可以混搭。默认None时则代表获取三个断面。
                     例如[[0,1,2],"z",[2,1,0]]，这样可以获取三个不同方位的切片。
                     元组/列表和字符串的具体值参照如下。
@@ -151,8 +163,9 @@ class MRILoader:
                     但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
             black   是否包含纯黑帧，只有slices为None或字符串时生效，默认为包含（True）
             type    因为输入必须是单通道原始切片，所以可以选择输出时是否进行转换，默认值ternary输出归一化后的三通道。normalize或normalizeslices输出归一化切片，其他则依然输出单通道原始切片。
+            consistent 默认为False，如果为True就代表使用处理后的切片数组代替对象内的slices数组，只有slices属性为None时生效。且所有对象内的数组的方向都会发生改变。
         '''
-    def getMultiplePositionSlices(self,slices=None,position=None,rot90=None,flip=None,black=True,type="ternary"):
+    def getMultiplePositionSlices(self,slices=None,position=None,rot90=None,flip=None,black=True,type="ternary",consistent=False):
         #存储复数个方位的切片
         multiplePositionSlices=[]
         #如果是None，则默认是三个断面
@@ -161,7 +174,7 @@ class MRILoader:
         # 如果是数组，则代表定义了方向
         if isinstance(position,list) or isinstance(position,tuple):
             for i,p in enumerate(position):
-                multiplePositionSlices.append(self.getChangePostionSlices(slices, p, None if rot90 is None else rot90[i], None if flip is None else flip[i], black,type))
+                multiplePositionSlices.append(self.getChangePostionSlices(slices, p, None if rot90 is None else rot90[i], None if flip is None else flip[i], black,type,consistent))
         return multiplePositionSlices
     # 对读取到的图片进行归一化
     # 因为我们拿到的nii图片是单通道，且像素值不定，超过255，因此对每张图片都需要进行归一化处理

@@ -140,7 +140,7 @@ normalizeSlicesTernary=loader.getNormalizeSlicesTernary()
 
 
 
-<h4>.changePosition(slices,position,rot90=None,flip=None,black=True,type='ternary')</h4>
+<h4>.changePosition(slices,position,rot90=None,flip=None,black=True,type='ternary',consistent=False)</h4>
 
 <p>获取指定方位的MRI切片数组。通常来说不会直接调用此方法，想要获取指定方位的MRI切片数组请getChangePostionSlices方法进行</p>
 
@@ -164,6 +164,10 @@ normalizeSlicesTernary=loader.getNormalizeSlicesTernary()
 
 - **type:** 因为输入必须是单通道原始切片，所以可以选择输出时是否进行转换，默认值ternary输出归一化后的三通道切片。normalize或normalizeslices输出归一化切片，其他则依然输出单通道原始切片。
 
+- **consistent**: 默认为False，如果为True就代表使用处理后的切片数组代替对象内的slices数组，只有slices属性为None时生效。且所有对象内的数组的方向都会发生改变。
+
+  此属性应由getChangePostionSlices方法控制，确保传入的slices可以替换本对象中的normalizeSlices。
+
 ```python
 slices=某MRI切片数组
 #将输入的slices切片数组，维度改为1,0,2排列，之后，逆时针旋转180度，上下翻转
@@ -172,7 +176,7 @@ slices=loader.changePosition(slices,(1,0,2),2,0)
 
 
 
-<h4>.getChangePostionSlices(slices=None,position=None,rot90=None,flip=None,black=True,type="ternary")</h4>
+<h4>.getChangePostionSlices(slices=None,position=None,rot90=None,flip=None,black=True,type="ternary",consistent=False)</h4>
 
 <p>
 获取指定方位的MRI切片数组。对changePosition进行包装实现参数可以接收字符串，提高易用性的效果。
@@ -182,7 +186,7 @@ slices=loader.changePosition(slices,(1,0,2),2,0)
 - **slices:** MRI切片数组（必须是并未经本方法或其他方法改变数组维度的单通道原始数组，因为必须改变断面后再进行归一化和三通道，否则会出现断层问题），默认值为None，可以为MRI切片数组、None、字符串。
 
   - **切片数组:** 将传入本方法的MRI切片数组更改为指定方向。
-  - **None**:默认，使用从本地读取或传入本对象的slices作为切片数组，但不会进行Inplace操作修改对象内的slices字段，有需求请自行修改（修改后需要重新归一化和三通道化）。
+  - **None**:默认，使用从本地读取或传入本对象的slices作为切片数组，但不会进行consistent操作修改对象内的slices字段，有需求请自行修改（修改后需要重新归一化和三通道化）。
   
 - **postion**:
 
@@ -210,13 +214,15 @@ slices=loader.changePosition(slices,(1,0,2),2,0)
 
 - **type:** 因为输入必须是单通道原始切片，所以可以选择输出时是否进行转换，默认值ternary输出归一化后的三通道切片。normalize或normalizeslices输出归一化切片，其他则依然输出单通道原始切片。
 
+- **consistent**: 默认为False，如果为True就代表使用处理后的切片数组代替对象内的slices数组，只有slices属性为None时生效。且所有对象内的数组的方向都会发生改变。
+
 ```python
 slices=loader.getChangePostionSlices(position="z") #将loader.slices，切换至水平断面
 ```
 
 
 
-<h4>.getMultiplePositionSlices(slices=None,position=None,rot90=None,flip=None,black=True,type="ternary")</h4>
+<h4>.getMultiplePositionSlices(slices=None,position=None,rot90=None,flip=None,black=True,type="ternary",consistent=False)</h4>
 
 <p>
 同时获取多个方位的MRI切片数组。可以获取包含同一个MRI的多个方位的MRI切片数组，结构为（方位下标,切片序号,w,h），方位序号根据position的传入顺序进行决定。内部调用了getChangePostionSlices方法。
@@ -227,7 +233,7 @@ slices=loader.getChangePostionSlices(position="z") #将loader.slices，切换至
 - **slices:** MRI切片数组（必须是并未经本方法或其他方法改变数组维度的单通道原始数组，因为必须改变断面后再进行归一化和三通道，否则会出现断层问题），默认值为None，可以为MRI切片数组、None、字符串。
 
   - **切片数组:** 将传入本方法的MRI切片数组更改为指定方向。
-  - **None**:默认，使用从本地读取或传入本对象的slices作为切片数组，但不会进行Inplace操作修改对象内的slices字段，有需求请自行修改（修改后需要重新归一化和三通道化）。
+  - **None**:默认，使用从本地读取或传入本对象的slices作为切片数组，但不会进行consistent操作修改对象内的slices字段，有需求请自行修改（修改后需要重新归一化和三通道化）。
   
 - **postion**:
 
@@ -251,6 +257,7 @@ slices=loader.getChangePostionSlices(position="z") #将loader.slices，切换至
 - **flip:** 切片翻转一维数组，需要与position成员对应，如果不需要调整需要用None占位，当然如果都不需要调整使用默认None即可，输入值为维度，输入0为上下翻转，输入1为左右翻转。但要注意，MRI较为特殊，有时并不会以期待的方式运行，需要自行调节。
 - **black:** 是否包含纯黑帧，只有slices为None或为字符串时生效，默认为包含（True）
 - **type:** 因为输入必须是单通道原始切片，所以可以选择输出时是否进行转换，默认值ternary输出归一化后的三通道切片。normalize或normalizeslices输出归一化切片，其他值则依然输出单通道原始切片。
+- **consistent**: 默认为False，如果为True就代表使用处理后的切片数组代替对象内的slices数组，只有slices属性为None时生效。且所有对象内的数组的方向都会发生改变。
 
 ```python
 #生成loader.slices的(0,2,1)、冠状面、(2,3,1)的切片数组，对(0,2,1)逆时针旋转90度，对(2,3,1)顺时针旋转180度。

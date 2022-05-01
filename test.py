@@ -8,9 +8,10 @@ from MRILoader import MRILoader,MultipleMRILoader
 # 加载单一MRI文件时
 MRIPath='./data/CC001/T1w_bscorr_SS.nii.gz'#请自行更改MRI文件地址
 loader = MRILoader(MRIPath)
-arr=loader.getMultiplePositionSlices()
-
+arr=loader.getMultiplePositionSlices(position=["y"],type=None,consistent=True)
 loader.display(150,arr[0])
+
+loader.display(150,loader.normalizeSlicesTernary)
 
 # loader.save()#默认存储到save文件夹
 #
