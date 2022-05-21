@@ -2,7 +2,7 @@
 
 version 1.5 2022/4/29
 
-[日本語バージョン](https://github.com/su797/MRILoader/blob/main/README_ja.md)
+[日本語ドキュメント](https://github.com/su797/MRILoader/blob/main/README_ja.md)
 
 ## 介绍
 
